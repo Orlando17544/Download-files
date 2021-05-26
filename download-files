@@ -1,0 +1,203 @@
+#!/bin/bash
+
+GREEN='\033[0;32m'
+ORANGE='\033[0;33m' 
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m' # No color
+
+downloadFiles () {
+read -p "On which pages would you like to download? " -a pagesArray
+read -p "Do the pages use base url for the links? (yes/no) " urlBase
+read -p "What regular expression? " regex
+
+echo "Downloading..."
+
+downloaded=0
+
+for page in "${pagesArray[@]}"; do
+	
+	wget --user-agent='Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:87.0) Gecko/20100101 Firefox/87.0' --header='Accept-Language: es-MX,es;q=0.8,en-US;q=0.5,en;q=0.3' --wait=1 --random-wait "$page"
+
+	#To avoid other name different than index.html
+	if [[ "$page" =~ [^/]$ ]]; then
+		file="$(echo "$page" | grep -Po '(?<=/)[^/]+[^/]$')"
+		mv "$file" index.html
+	fi
+
+	urls="$(grep -Po "$regex" index.html | perl -p -e 's/ /\\ /g' | perl -p -e 's/\n/ /g')"
+
+	read -a urlsArray <<< "$urls"
+
+	for url in "${urlsArray[@]}"; do
+		if [[ "$urlBase" == yes ]]; then
+			#To avoid repeated filenames like these: file.jpg1, file.jpg2. Instead like these: file1.jpg, file2.jpg
+			fileNameExtension="$url"
+			if [[ -e "$fileNameExtension" ]]; then
+				fileName="$(echo "$fileNameExtension" | grep -Po '\w+(?=\.\w{3})')"
+				count=1
+				extension="$(echo "$fileNameExtension" | grep -Po '\.\w{3}$')"
+
+				fileNameComplete="${fileName}${count}${extension}"
+
+				while [[ -e "$fileNameComplete" ]]; do
+					count=$((count + 1))
+					fileNameComplete="${fileName}${count}${extension}"
+				done
+
+				fileNameExtension="$fileNameComplete"
+
+			fi
+
+			wget --user-agent='Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:87.0) Gecko/20100101 Firefox/87.0' --header='Accept-Language: es-MX,es;q=0.8,en-US;q=0.5,en;q=0.3' --wait=1 --random-wait --output-document="$fileNameExtension" "$page$url"
+
+			if [[ $? -eq 0 ]]; then
+				downloaded=$((downloaded + 1))
+				echo -e "${GREEN}$page$url was downloaded${NC}"
+			else 
+				echo -e "${ORANGE}$page$url wasn't downloaded${NC}"
+			fi
+		else
+			#To avoid repeated filenames like these: file.jpg1, file.jpg2. Instead like these: file1.jpg, file2.jpg
+			fileNameExtension="$(echo "$url" | grep -Po '(?<=/)[^/]+[^/]$')"
+			if [[ -e "$fileNameExtension" ]]; then
+				fileName="$(echo "$fileNameExtension" | grep -Po '\w+(?=\.\w{3})')"
+				count=1
+				extension="$(echo "$fileNameExtension" | grep -Po '\.\w{3}$')"
+
+				fileNameComplete="${fileName}${count}${extension}"
+
+				while [[ -e "$fileNameComplete" ]]; do
+					count=$((count + 1))
+					fileNameComplete="${fileName}${count}${extension}"
+				done
+
+				fileNameExtension="$fileNameComplete"
+
+			fi
+
+			wget --user-agent='Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:87.0) Gecko/20100101 Firefox/87.0' --header='Accept-Language: es-MX,es;q=0.8,en-US;q=0.5,en;q=0.3' --wait=1 --random-wait --output-document="$fileNameExtension" "$url"
+
+			if [[ $? -eq 0 ]]; then
+				downloaded=$((downloaded + 1))
+				echo -e "${GREEN}$url was downloaded${NC}"
+			else 
+				echo -e "${ORANGE}$url wasn't downloaded${NC}"
+			fi
+		fi
+	done
+	
+	rm index.html
+done
+echo "$downloaded files were downloaded"
+read -p "Press enter to return to the menu "
+}
+
+viewUrls () {
+read -p "On which pages would you like to view? " -a pagesArray
+read -p "Do the pages use base url for the links? (yes/no) " urlBase
+read -p "What regular expression? " regex
+
+echo "Showing..."
+
+showed=0
+
+for page in "${pagesArray[@]}"; do
+	
+	wget --user-agent='Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:87.0) Gecko/20100101 Firefox/87.0' --header='Accept-Language: es-MX,es;q=0.8,en-US;q=0.5,en;q=0.3' --wait=1 --random-wait "$page"
+
+	#To avoid other name different than index.html
+	if [[ "$page" =~ [^/]$ ]]; then
+		file="$(echo "$page" | grep -Po '(?<=/)[^/]+[^/]$')"
+		mv "$file" index.html
+	fi
+
+	urls="$(grep -Po "$regex" index.html | perl -p -e 's/ /\\ /g' | perl -p -e 's/\n/ /g')"
+
+	read -a urlsArray <<< "$urls"
+
+	for url in "${urlsArray[@]}"; do
+		showed=$((showed + 1))
+		if [[ "$urlBase" == yes ]]; then
+			echo -e "${GREEN}$page$url${NC}\n"
+		else
+			echo -e "${GREEN}$url${NC}\n"
+		fi
+	done
+	
+	rm index.html
+done
+echo "$showed urls were showed"
+read -p "Press enter to return to the menu "
+}
+
+redirectLinks () {
+read -p "On which pages would you like to redirect links? " -a pagesArray
+read -p "Do the pages use base url for the links? (yes/no) " urlBase
+read -p "What regular expression? " regex
+
+echo "Redirecting..."
+
+redirected=0
+
+for page in "${pagesArray[@]}"; do
+	
+	wget --user-agent='Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:87.0) Gecko/20100101 Firefox/87.0' --header='Accept-Language: es-MX,es;q=0.8,en-US;q=0.5,en;q=0.3' --wait=1 --random-wait "$page"
+
+	#To avoid other name different than index.html
+	if [[ "$page" =~ [^/]$ ]]; then
+		file="$(echo "$page" | grep -Po '(?<=/)[^/]+[^/]$')"
+		mv "$file" index.html
+	fi
+
+	urls="$(grep -Po "$regex" index.html | perl -p -e 's/ /\\ /g' | perl -p -e 's/\n/ /g')"
+
+	read -a urlsArray <<< "$urls"
+
+	for url in "${urlsArray[@]}"; do
+		redirected=$((redirected + 1))
+		if [[ "$urlBase" == yes ]]; then
+			echo "$page$url" >> redirectedLinks.txt
+		else
+			echo "$url" >> redirectedLinks.txt
+		fi
+	done
+
+	echo "" >> redirectedLinks.txt
+	
+	rm index.html
+done
+echo "$redirected urls were redirected"
+read -p "Press enter to return to the menu "
+}
+
+while true; do
+	clear
+	cat <<- _EOF_
+		Please Select:
+		
+		1. View urls that would be downloaded
+		2. Download files
+		3. Redirect links to a file
+
+		It's recommended a regex like this: (?<=href=")http[^"]+?\.jpg 
+
+		The regex should be Perl-compatible and multiline is enabled by default.
+
+	_EOF_
+
+	read -p "Enter selection [1-3] > " selection
+
+	if [[ "$selection" =~ ^[1-3]$ ]]; then
+		if [[ "$selection" -eq 1 ]]; then
+			viewUrls
+		elif [[ "$selection" -eq 2 ]]; then 
+			downloadFiles
+		else 
+			redirectLinks
+		fi
+	else 
+		echo -e "${RED}Invalid entry${NC}"
+		sleep 3
+	fi
+done
